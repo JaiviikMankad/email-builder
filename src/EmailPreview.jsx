@@ -1,61 +1,54 @@
 import React, { useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import html2pdf from "html2pdf.js";
+import { savePDF } from "@progress/kendo-react-pdf";
 
-export default function EmailPreview() {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const html = location.state?.html || "";
-  const boxRef = useRef();
+export default function EmailPreview({ html, onBack, onSendEmail }) {
+  const previewRef = useRef();
 
-  const saveAsPdf = () => {
-    const opt = {
-      margin: 10,
-      filename: "email-template.pdf",
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    };
-    html2pdf().set(opt).from(boxRef.current).save();
+  const handleDownloadPDF = () => {
+    savePDF(previewRef.current, {
+      paperSize: "A4",
+      margin: 20,
+    });
   };
-
-  const showHtmlSource = () => {
-    const w = window.open("", "_blank");
-    w.document.write(`<pre>${escapeHtml(html)}</pre>`);
-  };
-
-  function escapeHtml(unsafe) {
-    return unsafe
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-  }
 
   return (
-    <div style={{ padding: 20 }}>
-      <button onClick={() => navigate(-1)}>&larr; Back</button>
-      <h2>Email Preview</h2>
+    <div style={{ maxWidth: "900px", margin: "0 auto" }}>
 
-      <div
-        id="emailPreviewBox"
-        ref={boxRef}
-        style={{
-          border: "1px solid #ddd",
-          padding: 20,
-          minHeight: 300,
-          background: "#fff",
-        }}
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+      <button onClick={onBack} style={{ marginBottom: "20px" }}>
+        ⬅ Back to Editor
+      </button>
 
-      <div style={{ marginTop: 12 }}>
-        <button onClick={showHtmlSource} style={{ marginRight: 8 }}>
-          View HTML Source
-        </button>
-        <button onClick={saveAsPdf} style={{ marginRight: 8 }}>
-          Save as PDF
-        </button>
-      </div>
+      <h2>Email Template Preview</h2>
+
+     <div
+  ref={previewRef}
+  style={{
+    border: "1px solid #ccc",
+    padding: "20px",
+    backgroundColor: "white",
+    marginTop: "20px",
+  }}
+>
+  <style>
+    {`
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      table, th, td {
+        border: 1px solid #000;
+      }
+
+      th, td {
+        padding: 8px;
+      }
+    `}
+  </style>
+
+  <div dangerouslySetInnerHTML={{ __html: html }} />
+</div>
+
     </div>
   );
 }
