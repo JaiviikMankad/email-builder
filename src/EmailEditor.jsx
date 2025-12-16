@@ -58,7 +58,7 @@ export default function EmailEditor({ onPreview }) {
         tools={[
           [Bold, Italic, Underline],
           [AlignLeft, AlignCenter, AlignRight, AlignJustify],
-          [InsertTable],
+          [InsertTable],[InsertImage],
           [Undo, Redo]
         ]}
         style={{ height: 400 }}
@@ -73,4 +73,5 @@ export default function EmailEditor({ onPreview }) {
     </div>
   );
 }
+
 
