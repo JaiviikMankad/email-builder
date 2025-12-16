@@ -1,5 +1,9 @@
 // server/index.js
-require('dotenv').config();
+const dotenv = require("dotenv");
+dotenv.config();
+const tenantId = process.env.OUTLOOK_TENANT_ID;
+console.log("Loaded Tenant ID:", tenantId);
+
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
@@ -25,7 +29,7 @@ function saveTokens(tokens) {
 
 // Utility: refresh token if needed
 async function refreshAccessToken(refresh_token) {
-  const tokenUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/token`;
+  const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
   const params = new URLSearchParams({
     client_id: process.env.OUTLOOK_CLIENT_ID,
     client_secret: process.env.OUTLOOK_CLIENT_SECRET,
@@ -52,7 +56,7 @@ app.get('/auth/outlook', (req, res) => {
     // Optionally state param can be added for CSRF protection
   });
 
-  const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`;
+  const authUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?${params.toString()}`;
   res.redirect(authUrl);
 });
 
@@ -63,7 +67,7 @@ app.get('/auth/outlook/callback', async (req, res) => {
     if (!code) return res.status(400).send('No code provided');
 
     const redirectUri = process.env.BACKEND_REDIRECT_URI || 'http://localhost:5000/auth/outlook/callback';
-    const tokenUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/token`;
+    const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
     const params = new URLSearchParams({
       client_id: process.env.OUTLOOK_CLIENT_ID,
       client_secret: process.env.OUTLOOK_CLIENT_SECRET,
