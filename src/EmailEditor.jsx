@@ -5,7 +5,7 @@ import imageCompression from "browser-image-compression";
 const {
   Bold, Italic, Underline,
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
-  InsertTable,
+  InsertTable,InsertImage,
   Undo, Redo
 } = EditorTools;
 
@@ -73,3 +73,4 @@ export default function EmailEditor({ onPreview }) {
     </div>
   );
 }
+
