@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/email-builder/static/css/main.4ffef937.css",
+    "main.js": "/email-builder/static/js/main.325857bc.js",
+    "index.html": "/email-builder/index.html",
+    "main.4ffef937.css.map": "/email-builder/static/css/main.4ffef937.css.map",
+    "main.325857bc.js.map": "/email-builder/static/js/main.325857bc.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.4ffef937.css",
+    "static/js/main.325857bc.js"
+  ]
+}
