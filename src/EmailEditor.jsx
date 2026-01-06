@@ -57,33 +57,52 @@ export default function EmailEditor({ onPreview }) {
     reader.readAsDataURL(compressedFile);
   };
 
-  // NORMAL image uploader (content images)
-  const handleImageInsert = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+const DEFAULT_REDIRECT_URL = "https://www.ozcoastlogistics.com.au/contact-us/";
 
-    const compressedFile = await imageCompression(file, {
-      maxSizeMB: 1,
-      maxWidthOrHeight: 1200,
-      useWebWorker: true,
-      initialQuality: 0.9
-    });
+const handleImageInsert = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const url = evt.target.result;
+  const compressedFile = await imageCompression(file, {
+    maxSizeMB: 1,
+    maxWidthOrHeight: 1200,
+    useWebWorker: true,
+    initialQuality: 0.9,
+  });
 
-      const imageHtml = `
-        <div style="text-align:center; margin:20px 0;">
-          <img src="${url}" style="max-width:100%; height:auto;" />
-        </div>
-      `;
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    const url = evt.target.result;
 
-      setHtml(prev => prev + imageHtml);
-    };
+    const imageHtml = `
+      <div style="text-align:center; margin:20px 0;">
+        <a
+          href="${DEFAULT_REDIRECT_URL}"
+          target="_blank"
+          style="text-decoration:none; border:0;"
+        >
+          <img
+            src="${url}"
+            alt="Image"
+            style="
+              max-width:100%;
+              height:auto;
+              display:block;
+              margin:0 auto;
+              border:0;
+              outline:none;
+              text-decoration:none;
+            "
+          />
+        </a>
+      </div>
+    `;
 
-    reader.readAsDataURL(compressedFile);
+    setHtml((prev) => prev + imageHtml);
   };
+
+  reader.readAsDataURL(compressedFile);
+};
 
   return (
     <div style={{ maxWidth: "900px", margin: "0 auto" }}>
@@ -122,3 +141,4 @@ export default function EmailEditor({ onPreview }) {
     </div>
   );
 }
+
