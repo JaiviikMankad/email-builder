@@ -1,3 +1,20 @@
+
+
+// server/index.js
+const dotenv = require("dotenv");
+dotenv.config();
+const tenantId = process.env.OUTLOOK_TENANT_ID;
+console.log("Loaded Tenant ID:", tenantId);
+
+const express = require('express');
+const cors = require('cors');
+const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
+
+const app = express();
+
+
 /* ================================
    UNSUBSCRIBE ROUTE (FILE LOG)
 ================================ */
@@ -28,20 +45,6 @@ User-Agent: ${req.headers["user-agent"]}
   `);
 });
 
-
-// server/index.js
-const dotenv = require("dotenv");
-dotenv.config();
-const tenantId = process.env.OUTLOOK_TENANT_ID;
-console.log("Loaded Tenant ID:", tenantId);
-
-const express = require('express');
-const cors = require('cors');
-const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
-
-const app = express();
 app.use(cors({ origin: process.env.FRONTEND_ORIGIN || 'http://localhost:3000' }));
 app.use(express.json({ limit: '10mb' }));
 
