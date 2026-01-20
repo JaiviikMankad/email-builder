@@ -1,3 +1,34 @@
+/* ================================
+   UNSUBSCRIBE ROUTE (FILE LOG)
+================================ */
+app.get("/unsubscribe", (req, res) => {
+  const logFilePath = path.join(process.cwd(), "unsubscribe.log");
+
+
+  const log = `
+[${new Date().toISOString()}]
+IP: ${req.ip}
+User-Agent: ${req.headers["user-agent"]}
+----------------------------------
+`;
+
+  fs.appendFile(logFilePath, log, (err) => {
+    if (err) {
+      console.error("Unsubscribe log error:", err);
+    }
+  });
+
+  res.send(`
+    <html>
+      <body style="font-family:Arial;text-align:center;padding:40px;">
+        <h2>You are unsubscribed</h2>
+        <p>You will no longer receive emails from us.</p>
+      </body>
+    </html>
+  `);
+});
+
+
 // server/index.js
 const dotenv = require("dotenv");
 dotenv.config();
