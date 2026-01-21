@@ -18,6 +18,9 @@ const app = express();
 /* ================================
    UNSUBSCRIBE ROUTE (FILE LOG)
 ================================ */
+
+console.log("CLIENT_EMAIL:", process.env.CLIENT_EMAIL);
+
 app.get("/unsubscribe", (req, res) => {
   const logFilePath = path.join(process.cwd(), "unsubscribe.log");
 
