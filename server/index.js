@@ -22,73 +22,58 @@ const app = express();
 console.log("CLIENT_EMAIL:", process.env.CLIENT_EMAIL);
 
 app.get("/unsubscribe", async (req, res) => {
+  const clientEmail = req.query.email || "UNKNOWN";
+
+  console.log("Unsubscribe clicked by:", clientEmail);
+
+  /* ================================
+     SEND EMAIL NOTIFICATION
+  ================================ */
   try {
-    const clientEmail = req.query.email || "unknown";
-    const dateTime = new Date().toLocaleString("en-IN", {
-      timeZone: "Asia/Kolkata",
-    });
-
-    const notifyTo = process.env.CLIENT_EMAIL; // fixed receiver
-    const fromEmail = Object.keys(loadTokens())[0]; // first connected Outlook
-
-    if (!fromEmail) {
-      return res.status(500).send("No Outlook account connected");
-    }
-
-    const store = loadTokens();
-    const entry = store[fromEmail];
-
-    // refresh token if needed
-    if (Date.now() > entry.expires_at - 60000) {
-      const refreshed = await refreshAccessToken(entry.refresh_token);
-      entry.access_token = refreshed.access_token;
-      entry.expires_at =
-        Date.now() + (refreshed.expires_in || 3600) * 1000;
-      saveTokens(store);
-    }
-
-    const mail = {
-      message: {
-        subject: "Unsubscribe Request",
-        body: {
-          contentType: "HTML",
-          content: `
-            <h3>Unsubscribe Clicked</h3>
-            <p><b>Client Email:</b> ${clientEmail}</p>
-            <p><b>Date & Time:</b> ${dateTime}</p>
-          `,
-        },
-        toRecipients: [
-          { emailAddress: { address: notifyTo } },
-        ],
-      },
-      saveToSentItems: true,
-    };
-
     await axios.post(
-      `https://graph.microsoft.com/v1.0/users/${fromEmail}/sendMail`,
-      mail,
+      `https://graph.microsoft.com/v1.0/users/${process.env.OUTLOOK_SENDER_EMAIL}/sendMail`,
+      {
+        message: {
+          subject: "Unsubscribe Clicked",
+          body: {
+            contentType: "HTML",
+            content: `
+              <h3>Unsubscribe Clicked</h3>
+              <p><b>Client Email:</b> ${clientEmail}</p>
+              <p><b>Date & Time:</b> ${new Date().toLocaleString()}</p>
+            `,
+          },
+          toRecipients: [
+            { emailAddress: { address: process.env.UNSUBSCRIBE_RECEIVER_EMAIL } }
+          ],
+        },
+        saveToSentItems: true,
+      },
       {
         headers: {
-          Authorization: `Bearer ${entry.access_token}`,
+          Authorization: `Bearer ${process.env.OUTLOOK_ACCESS_TOKEN}`,
           "Content-Type": "application/json",
         },
       }
     );
-
-    res.send(`
-      <html>
-        <body style="font-family:Arial;text-align:center;padding:40px;">
-          <h2>You are unsubscribed</h2>
-          <p>You will no longer receive emails from us.</p>
-        </body>
-      </html>
-    `);
   } catch (err) {
-    console.error("Unsubscribe error:", err);
-    res.status(500).send("Something went wrong");
+    console.error("Unsubscribe email error:", err.response?.data || err.message);
   }
+
+  /* ================================
+     USER RESPONSE
+  ================================ */
+  res.send(`
+    <html>
+      <body style="font-family:Arial;text-align:center;padding:40px;">
+        <h2>You are unsubscribed</h2>
+        <p>Email: ${clientEmail}</p>
+      </body>
+    </html>
+  `);
 });
+
+
 
 
 
@@ -215,6 +200,18 @@ app.get('/connected', (req, res) => {
 app.post('/send-mail', async (req, res) => {
   try {
     const { fromEmail, to, cc, subject, html } = req.body;
+
+    // STEP 2: inject unsubscribe link with client email
+const clientEmail = Array.isArray(to) ? to[0] : to;
+
+const unsubscribeLink =
+  `https://email-builder-api.onrender.com/unsubscribe?email=${encodeURIComponent(clientEmail)}`;
+
+const finalHtml = html.replace(
+  "{{UNSUBSCRIBE_LINK}}",
+  unsubscribeLink
+);
+
     if (!fromEmail || !to || !subject || !html) {
       return res.status(400).json({ error: 'fromEmail, to, subject, html are required' });
     }
@@ -239,7 +236,7 @@ app.post('/send-mail', async (req, res) => {
     const message = {
       message: {
         subject,
-        body: { contentType: 'HTML', content: html },
+        body: { contentType: 'HTML', content: finalHtml },
         toRecipients: Array.isArray(to) ? to.map(t => ({ emailAddress: { address: t } })) : [{ emailAddress: { address: to } }],
         ccRecipients: cc ? (Array.isArray(cc) ? cc.map(c => ({ emailAddress: { address: c } })) : [{ emailAddress: { address: cc } }]) : [],
       },
