@@ -21,32 +21,78 @@ const app = express();
 
 console.log("CLIENT_EMAIL:", process.env.CLIENT_EMAIL);
 
-app.get("/unsubscribe", (req, res) => {
-  const logFilePath = path.join(process.cwd(), "unsubscribe.log");
+app.get("/unsubscribe", async (req, res) => {
+  try {
+    const clientEmail = req.query.email || "unknown";
+    const dateTime = new Date().toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+    });
 
+    const notifyTo = process.env.CLIENT_EMAIL; // fixed receiver
+    const fromEmail = Object.keys(loadTokens())[0]; // first connected Outlook
 
-  const log = `
-[${new Date().toISOString()}]
-IP: ${req.ip}
-User-Agent: ${req.headers["user-agent"]}
-----------------------------------
-`;
-
-  fs.appendFile(logFilePath, log, (err) => {
-    if (err) {
-      console.error("Unsubscribe log error:", err);
+    if (!fromEmail) {
+      return res.status(500).send("No Outlook account connected");
     }
-  });
 
-  res.send(`
-    <html>
-      <body style="font-family:Arial;text-align:center;padding:40px;">
-        <h2>You are unsubscribed</h2>
-        <p>You will no longer receive emails from us.</p>
-      </body>
-    </html>
-  `);
+    const store = loadTokens();
+    const entry = store[fromEmail];
+
+    // refresh token if needed
+    if (Date.now() > entry.expires_at - 60000) {
+      const refreshed = await refreshAccessToken(entry.refresh_token);
+      entry.access_token = refreshed.access_token;
+      entry.expires_at =
+        Date.now() + (refreshed.expires_in || 3600) * 1000;
+      saveTokens(store);
+    }
+
+    const mail = {
+      message: {
+        subject: "Unsubscribe Request",
+        body: {
+          contentType: "HTML",
+          content: `
+            <h3>Unsubscribe Clicked</h3>
+            <p><b>Client Email:</b> ${clientEmail}</p>
+            <p><b>Date & Time:</b> ${dateTime}</p>
+          `,
+        },
+        toRecipients: [
+          { emailAddress: { address: notifyTo } },
+        ],
+      },
+      saveToSentItems: true,
+    };
+
+    await axios.post(
+      `https://graph.microsoft.com/v1.0/users/${fromEmail}/sendMail`,
+      mail,
+      {
+        headers: {
+          Authorization: `Bearer ${entry.access_token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    res.send(`
+      <html>
+        <body style="font-family:Arial;text-align:center;padding:40px;">
+          <h2>You are unsubscribed</h2>
+          <p>You will no longer receive emails from us.</p>
+        </body>
+      </html>
+    `);
+  } catch (err) {
+    console.error("Unsubscribe error:", err);
+    res.status(500).send("Something went wrong");
+  }
 });
+
+
+
+// Email code ends
 
 app.use(cors({ origin: process.env.FRONTEND_ORIGIN || 'http://localhost:3000' }));
 app.use(express.json({ limit: '10mb' }));
