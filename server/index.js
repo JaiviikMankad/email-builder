@@ -1,5 +1,6 @@
 
 
+
 // server/index.js
 const dotenv = require("dotenv");
 dotenv.config();
@@ -13,6 +14,49 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "https://jaiviikmankad.github.io",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+
+/* ================================
+   STEP 2: PUBLIC IMAGE HOSTING
+================================ */
+
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads"))
+);
+
+const uploadDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
+
+const multer = require("multer");
+const { v4: uuidv4 } = require("uuid");
+
+const storage = multer.diskStorage({
+  destination: "uploads",
+  filename: (req, file, cb) => {
+    cb(null, `${uuidv4()}${path.extname(file.originalname)}`);
+  },
+});
+
+const upload = multer({ storage });
+
+app.post("/upload-image", upload.single("image"), (req, res) => {
+  res.json({
+    url: `https://email-builder-d539.onrender.com/uploads/${req.file.filename}`,
+  });
+});
 
 
 /* ================================
@@ -78,8 +122,8 @@ app.get("/unsubscribe", async (req, res) => {
 
 
 // Email code ends
-
-app.use(cors({ origin: process.env.FRONTEND_ORIGIN || 'http://localhost:3000' }));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// app.use(cors({ origin: process.env.FRONTEND_ORIGIN || 'http://localhost:3000' }));
 app.use(express.json({ limit: '10mb' }));
 
 // Simple token store (file). For production use a DB.
@@ -205,12 +249,13 @@ app.post('/send-mail', async (req, res) => {
 const clientEmail = Array.isArray(to) ? to[0] : to;
 
 const unsubscribeLink =
-  `https://email-builder-api.onrender.com/unsubscribe?email=${encodeURIComponent(clientEmail)}`;
+  `https://email-builder-d539.onrender.com/unsubscribe?email=${encodeURIComponent(clientEmail)}`;
 
 const finalHtml = html.replace(
   "{{UNSUBSCRIBE_LINK}}",
   unsubscribeLink
 );
+
 
     if (!fromEmail || !to || !subject || !html) {
       return res.status(400).json({ error: 'fromEmail, to, subject, html are required' });
