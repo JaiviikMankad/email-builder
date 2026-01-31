@@ -6,7 +6,6 @@ const dotenv = require("dotenv");
 dotenv.config();
 const tenantId = process.env.OUTLOOK_TENANT_ID;
 console.log("Loaded Tenant ID:", tenantId);
-
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
