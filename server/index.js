@@ -29,33 +29,42 @@ app.use(
    STEP 2: PUBLIC IMAGE HOSTING
 ================================ */
 
-app.use(
-  "/uploads",
-  express.static(path.join(__dirname, "uploads"))
-);
-
-const uploadDir = path.join(__dirname, "uploads");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
-
 const multer = require("multer");
+
 const { v4: uuidv4 } = require("uuid");
 
-const storage = multer.diskStorage({
-  destination: "uploads",
-  filename: (req, file, cb) => {
-    cb(null, `${uuidv4()}${path.extname(file.originalname)}`);
-  },
+const upload = multer({ storage: multer.memoryStorage() });
+
+app.post("/upload-image", upload.single("image"), async (req, res) => {
+  try {
+    const filename = `${Date.now()}-${uuidv4()}-${req.file.originalname}`;
+    const base64 = req.file.buffer.toString("base64");
+
+    const githubApiUrl = `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/uploads/${filename}`;
+
+    await axios.put(
+      githubApiUrl,
+      {
+        message: "Upload email image",
+        content: base64
+      },
+      {
+        headers: {
+          Authorization: `token ${process.env.GITHUB_TOKEN}`,
+          Accept: "application/vnd.github+json"
+        }
+      }
+    );
+
+    const rawUrl = `https://raw.githubusercontent.com/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/${process.env.GITHUB_BRANCH}/uploads/${filename}`;
+
+    res.json({ url: rawUrl });
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    res.status(500).json({ error: "Image upload failed" });
+  }
 });
 
-const upload = multer({ storage });
-
-app.post("/upload-image", upload.single("image"), (req, res) => {
-  res.json({
-    url: `https://email-builder-d539.onrender.com/uploads/${req.file.filename}`,
-  });
-});
 
 
 /* ================================
